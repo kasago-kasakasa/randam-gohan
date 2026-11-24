@@ -806,9 +806,10 @@ function openSettings(){
   ${sw('avoid','最近出た料理を出しにくくする')}
   ${sw('harmony','主菜のジャンルに副菜・汁物を合わせる')}
   ${sw('favBoost','お気に入りを出やすくする')}
-  ${window.__login?`<div class="field"><span class="lab">クラウド保存（Googleアカウント）</span>${window.__fbUser?`<span class="hint">ログイン中：${esc(window.__fbUser.email||'')}<br>ログアウトすると、この端末の記録は消えます（クラウドには残り、次にログインすると戻ります）。</span><div class="dtools" style="margin-top:4px"><button class="btn" data-act="logout">ログアウト</button></div>`:`<span class="hint">ログインすると、スマホとPCで同じデータを使えます。</span><div class="dtools" style="margin-top:4px"><button class="btn primary" data-act="syncinfo">Googleでログイン</button></div>`}</div>`:''}
+  ${window.__login?`<div class="field"><span class="lab">クラウド保存（Googleアカウント）</span>${window.__fbUser?`<span class="hint">ログイン中：${esc(window.__fbUser.email||'')}<br>ログアウトすると、この端末の記録は消えます（クラウドには残り、次にログインすると戻ります）。</span><div class="dtools" style="margin-top:4px"><button class="btn" data-act="logout">ログアウト</button><button class="btn danger" data-act="clouddel">クラウドのデータを削除</button></div>`:`<span class="hint">ログインすると、スマホとPCで同じデータを使えます。ログインすると<a href="policy.html">利用規約・プライバシーポリシー</a>に同意したものとみなします。</span><div class="dtools" style="margin-top:4px"><button class="btn primary" data-act="syncinfo">Googleでログイン</button></div>`}</div>`:''}
   <div class="field"><span class="lab">バックアップ・別の端末へ移す</span><span class="hint">冷蔵庫・お気に入り・保存した献立・設定は、この端末のブラウザに保存されています。ブラウザのデータを消すと消えるので、控えを取っておくと安心です。</span><div class="dtools" style="margin-top:4px"><button class="btn" data-act="export">データをコピー</button><button class="btn" data-act="importopen">貼り付けて復元</button></div></div>
-  <div class="field" style="border:0"><button class="btn danger" data-act="reset" id="btnReset">すべてのデータを初期化</button><span class="hint">冷蔵庫・お気に入り・保存した献立・履歴・設定が、この端末と保存場所の両方から消えます。</span></div>`);
+  <div class="field" style="border:0"><button class="btn danger" data-act="reset" id="btnReset">すべてのデータを初期化</button><span class="hint">冷蔵庫・お気に入り・保存した献立・履歴・設定が、この端末と保存場所の両方から消えます。</span></div>
+  <div class="field" style="border:0"><a href="policy.html">利用規約・プライバシーポリシー</a></div>`);
 }
 
 /* ---------- テキスト出力 ---------- */
@@ -922,7 +923,8 @@ document.addEventListener('click',e=>{
     case 'cooked':openCooked();break;
     case 'cookeddel':{const ks=$$('.ckuse:checked').map(x=>x.value);ks.forEach(fzRemove);save();closeSheet();rerenderAll();toast(ks.length?`${ks.length}品を冷蔵庫から消しました`:'消すものは選ばれていません');break;}
     case 'shop2fz':{let n=0;shopItems().filter(e=>S.shopDone[e.n]).forEach(e=>{keysOf(e.n).forEach(k=>{if(FZ.stapleSet.has(k)){if(!pantryOn(k)){S.pantry[k]=true;n++;}}else if(fzAdd(k))n++;});delete S.shopDone[e.n];});save();refreshSheet();rerenderAll();toast(n?`${n}品を冷蔵庫に入れました`:'チェックした食材はもう冷蔵庫にあるか、チェックがありません');break;}
-    case 'syncinfo':if(cloud.st==='local'&&window.__login){window.__login().catch(()=>toast('ログインできませんでした。もう一度お試しください'));}else toast(SYNC_INFO[cloud.st]);break;
+    case 'syncinfo':if(cloud.st==='local'&&window.__login){if(sheetKind==='settings'){window.__login().catch(()=>toast('ログインできませんでした。もう一度お試しください'));}else openSettings();}else toast(SYNC_INFO[cloud.st]);break;
+    case 'clouddel':if(b.dataset.armed){(async()=>{try{if(cloud.ref&&cloud.ref.delete)await cloud.ref.delete();cloud.ready=false;try{localStorage.removeItem(KEY);}catch(x){}toast('クラウドのデータを削除しました');setTimeout(()=>{window.__logout?window.__logout():location.reload();},800);}catch(x){toast('削除できませんでした。通信状態を確認してもう一度お試しください');}})();}else{b.dataset.armed='1';b.textContent='もう一度押すと完全に削除します';setTimeout(()=>{if(document.contains(b)){delete b.dataset.armed;b.textContent='クラウドのデータを削除';}},3000);}break;
     case 'logout':if(window.__logout)window.__logout();break;
     case 'export':copyText(JSON.stringify({app:'random-gohan',v:1,ts:S.ts,s:syncPart()}));break;
     case 'importopen':sheetKind='import';openSheet('データを復元',`<p class="note" style="margin:0 0 8px">「データをコピー」で控えた文字を貼り付けてください。今のデータは置き換わります。</p><textarea class="copybox" id="impText" aria-label="復元するデータ"></textarea><div class="dtools"><button class="btn primary" data-act="importdo">復元する</button></div>`);break;

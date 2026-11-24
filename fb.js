@@ -20,6 +20,7 @@ if (firebaseConfig && firebaseConfig.apiKey) {
     if (n === 'user') return { id: async () => user.uid };
     if (n === 'db') return { doc: (p) => { const r = F.doc(fs, p); return {
       get: async () => { const s = await F.getDoc(r); return { exists: s.exists(), data: () => s.data() }; },
+      delete: () => F.deleteDoc(r),
       set: (d) => F.setDoc(r, d).catch(e => { throw { code: e.code === 'permission-denied' ? 'invalid_argument' : (e.code || 'unavailable') }; }),
     }; } };
     return null;
