@@ -14,7 +14,7 @@ if (firebaseConfig && firebaseConfig.apiKey) {
     try { await A.signInWithPopup(auth, prov); }
     catch (e) { if (['auth/popup-blocked', 'auth/operation-not-supported-in-environment', 'auth/cancelled-popup-request'].includes(e.code)) await A.signInWithRedirect(auth, prov); else throw e; }
   };
-  window.__logout = () => A.signOut(auth).then(() => location.reload());
+  window.__logout = () => A.signOut(auth).then(() => { try { localStorage.removeItem('random-gohan-v1'); } catch (e) {} location.reload(); });
   window.claude = { use: async (n) => {
     await readyP; if (!user) return null;
     if (n === 'user') return { id: async () => user.uid };

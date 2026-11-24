@@ -326,7 +326,7 @@ const ICON={
   cart:'<svg class="i" viewBox="0 0 24 24"><path d="M3 4h2.2l2.3 10.5h10.2L20 7H6.3"/><circle cx="9" cy="19" r="1.4"/><circle cx="17" cy="19" r="1.4"/></svg>',
   save:'<svg class="i" viewBox="0 0 24 24"><path d="M6.5 3.5h11v17l-5.5-3.8-5.5 3.8z"/></svg>'
 };
-const DEF={mode:'set',sides:1,soup:true,okN:3,okType:'mix',genres:[],quick:false,healthy:false,mains:[],servings:2,kcalT:800,saltT:2.5,exclude:'',rice:{white:true,brown:true,grain:true,mixed:true},don:false,avoid:true,harmony:true,favBoost:true,fav:[],sets:[],hist:[],recent:[],shopDone:{},cur:{set:null,okazu:null,week:null,fridge:null},fridge:[],urgent:[],pantry:{},fzForm:'set',fzBuy:0,subst:true,ts:0,synced:false};
+const DEF={mode:'set',sides:1,soup:true,okN:3,okType:'mix',genres:[],quick:false,healthy:false,mains:[],servings:2,kcalT:800,saltT:2.5,exclude:'',rice:{white:true,brown:true,grain:true,mixed:true},don:false,avoid:true,harmony:true,favBoost:true,fav:[],sets:[],hist:[],recent:[],shopDone:{},cur:{set:null,okazu:null,week:null,fridge:null},fridge:[],urgent:[],pantry:{},fzForm:'set',fzBuy:0,subst:true,ts:0,synced:false,owner:null};
 const clone=o=>JSON.parse(JSON.stringify(o));
 let S=load(), DB=[], BY={}, tab='gacha', opened=new Set(), rolling=false, sheetDish=null, sheetKind=null;
 function load(){try{const j=JSON.parse(localStorage.getItem(KEY)||'null');if(j&&typeof j==='object'){const s=Object.assign(clone(DEF),j);s.rice=Object.assign({},DEF.rice,j.rice||{});s.cur=Object.assign({},DEF.cur,j.cur||{});return s;}}catch(e){}return clone(DEF);}
@@ -375,8 +375,11 @@ async function initCloud(tries){
     const snap=await cloud.ref.get();clearTimeout(to);
     cloud.ready=true;
     const d=snap.exists?snap.data():null;
-    if(d&&d.s&&!(S.synced&&S.ts>(d.ts||0))){applyCloud(d);setSync('synced');}
-    else await writeCloud();
+    if(d&&d.s&&!(S.synced&&S.owner===uid&&S.ts>(d.ts||0))){S.owner=uid;applyCloud(d);setSync('synced');}
+    else{
+      if(!d&&S.owner&&S.owner!==uid){S=clone(DEF);opened.clear();booting=true;ensureCurrent();save();lastSync=JSON.stringify(syncPart());booting=false;rerenderAll();}
+      S.owner=uid;S.ts=S.ts||Date.now();await writeCloud();
+    }
   }catch(e){clearTimeout(to);setSync(e&&e.code==='revoked'?'local':'offline');}
 }
 function applyCloud(d){
@@ -803,7 +806,7 @@ function openSettings(){
   ${sw('avoid','最近出た料理を出しにくくする')}
   ${sw('harmony','主菜のジャンルに副菜・汁物を合わせる')}
   ${sw('favBoost','お気に入りを出やすくする')}
-  ${window.__login?`<div class="field"><span class="lab">クラウド保存（Googleアカウント）</span>${window.__fbUser?`<span class="hint">ログイン中：${esc(window.__fbUser.email||'')}</span><div class="dtools" style="margin-top:4px"><button class="btn" data-act="logout">ログアウト</button></div>`:`<span class="hint">ログインすると、スマホとPCで同じデータを使えます。</span><div class="dtools" style="margin-top:4px"><button class="btn primary" data-act="syncinfo">Googleでログイン</button></div>`}</div>`:''}
+  ${window.__login?`<div class="field"><span class="lab">クラウド保存（Googleアカウント）</span>${window.__fbUser?`<span class="hint">ログイン中：${esc(window.__fbUser.email||'')}<br>ログアウトすると、この端末の記録は消えます（クラウドには残り、次にログインすると戻ります）。</span><div class="dtools" style="margin-top:4px"><button class="btn" data-act="logout">ログアウト</button></div>`:`<span class="hint">ログインすると、スマホとPCで同じデータを使えます。</span><div class="dtools" style="margin-top:4px"><button class="btn primary" data-act="syncinfo">Googleでログイン</button></div>`}</div>`:''}
   <div class="field"><span class="lab">バックアップ・別の端末へ移す</span><span class="hint">冷蔵庫・お気に入り・保存した献立・設定は、この端末のブラウザに保存されています。ブラウザのデータを消すと消えるので、控えを取っておくと安心です。</span><div class="dtools" style="margin-top:4px"><button class="btn" data-act="export">データをコピー</button><button class="btn" data-act="importopen">貼り付けて復元</button></div></div>
   <div class="field" style="border:0"><button class="btn danger" data-act="reset" id="btnReset">すべてのデータを初期化</button><span class="hint">冷蔵庫・お気に入り・保存した献立・履歴・設定が、この端末と保存場所の両方から消えます。</span></div>`);
 }
